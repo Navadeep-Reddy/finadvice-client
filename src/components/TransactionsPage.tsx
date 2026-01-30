@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Sidebar from './Sidebar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,25 @@ interface Transaction {
     category: string | null;
 }
 
+// Modal form state
+interface ManualEntryForm {
+    amount: string;
+    type: 'CREDIT' | 'DEBIT';
+    mode: string;
+    narration: string;
+    txn_date: string;
+    category: string;
+}
+
+const initialForm: ManualEntryForm = {
+    amount: '',
+    type: 'DEBIT',
+    mode: 'Manual',
+    narration: '',
+    txn_date: new Date().toISOString().split('T')[0],
+    category: '',
+};
+
 const TransactionsPage: React.FC = () => {
     const { user } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -28,6 +47,12 @@ const TransactionsPage: React.FC = () => {
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
 
+    // Modal State
+    const [showModal, setShowModal] = useState(false);
+    const [form, setForm] = useState<ManualEntryForm>(initialForm);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
     // Derived filter options from data
     const categories = useMemo(() => {
         const unique = new Set(transactions.map(t => t.category).filter(Boolean));
@@ -39,38 +64,105 @@ const TransactionsPage: React.FC = () => {
         return ['All', ...Array.from(unique)] as string[];
     }, [transactions]);
 
+    // Existing categories for validation
+    const existingCategories = useMemo(() => {
+        return new Set(transactions.map(t => t.category?.toLowerCase()).filter(Boolean));
+    }, [transactions]);
+
     // Fetch transactions
-    useEffect(() => {
-        const fetchTransactions = async () => {
-            if (!user) return;
-            setLoading(true);
-            setError(null);
+    const fetchTransactions = useCallback(async () => {
+        if (!user) return;
+        setLoading(true);
+        setError(null);
 
-            try {
-                const { data, error: fetchError } = await supabase
-                    .from('transactions')
-                    .select('id, txn_id, amount, type, mode, narration, txn_date, category')
-                    .eq('user_id', user.id)
-                    .order('txn_date', { ascending: false })
-                    .limit(50);
+        try {
+            const { data, error: fetchError } = await supabase
+                .from('transactions')
+                .select('id, txn_id, amount, type, mode, narration, txn_date, category')
+                .eq('user_id', user.id)
+                .order('txn_date', { ascending: false })
+                .limit(50);
 
-                if (fetchError) throw fetchError;
-                setTransactions(data || []);
-            } catch (err: any) {
-                setError(err.message || 'Failed to fetch transactions');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTransactions();
+            if (fetchError) throw fetchError;
+            setTransactions(data || []);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch transactions');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     }, [user]);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [fetchTransactions]);
+
+    // Handle form changes
+    const handleFormChange = (field: keyof ManualEntryForm, value: string) => {
+        setForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Submit manual entry
+    const handleSubmit = async () => {
+        if (!user) return;
+
+        // Validation
+        if (!form.amount || parseFloat(form.amount) <= 0) {
+            setSubmitError('Please enter a valid amount');
+            return;
+        }
+        if (!form.narration.trim()) {
+            setSubmitError('Please enter a description');
+            return;
+        }
+        if (!form.txn_date) {
+            setSubmitError('Please select a date');
+            return;
+        }
+
+        setSubmitting(true);
+        setSubmitError(null);
+
+        try {
+            // Check if category exists, else use "Other"
+            let finalCategory = form.category.trim() || 'Other';
+            if (finalCategory !== 'Other' && !existingCategories.has(finalCategory.toLowerCase())) {
+                // Category doesn't match existing ones, set to "Other"
+                finalCategory = 'Other';
+            }
+
+            const { error: insertError } = await supabase
+                .from('transactions')
+                .insert({
+                    user_id: user.id,
+                    amount: parseFloat(form.amount),
+                    type: form.type,
+                    mode: form.mode || 'Manual',
+                    narration: form.narration.trim(),
+                    txn_date: new Date(form.txn_date).toISOString(),
+                    category: finalCategory,
+                    is_manual: true,
+                });
+
+            if (insertError) throw insertError;
+
+            // Reset form and close modal
+            setForm(initialForm);
+            setShowModal(false);
+
+            // Reload transactions
+            await fetchTransactions();
+        } catch (err: any) {
+            setSubmitError(err.message || 'Failed to add transaction');
+            console.error('Insert error:', err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     // Filtered transactions
     const filteredTransactions = useMemo(() => {
         return transactions.filter(txn => {
-            // Search filter
             if (searchQuery) {
                 const q = searchQuery.toLowerCase();
                 const matchesSearch =
@@ -79,13 +171,9 @@ const TransactionsPage: React.FC = () => {
                     txn.id.toLowerCase().includes(q);
                 if (!matchesSearch) return false;
             }
-            // Type filter
             if (typeFilter !== 'All' && txn.type !== typeFilter) return false;
-            // Category filter
             if (categoryFilter !== 'All' && txn.category !== categoryFilter) return false;
-            // Mode filter
             if (modeFilter !== 'All' && txn.mode !== modeFilter) return false;
-            // Date filter
             if (startDate && txn.txn_date) {
                 if (new Date(txn.txn_date) < new Date(startDate)) return false;
             }
@@ -112,6 +200,7 @@ const TransactionsPage: React.FC = () => {
             'Rent': 'home',
             'Supplies': 'inventory_2',
             'Sales': 'storefront',
+            'Other': 'more_horiz',
         };
         return map[category || ''] || 'receipt';
     };
@@ -123,6 +212,7 @@ const TransactionsPage: React.FC = () => {
             'Rent': 'bg-purple-500/10 text-purple-600',
             'Supplies': 'bg-orange-500/10 text-orange-600',
             'Sales': 'bg-green-500/10 text-green-600',
+            'Other': 'bg-gray-500/10 text-gray-600',
         };
         return map[category || ''] || 'bg-gray-500/10 text-gray-600';
     };
@@ -142,9 +232,12 @@ const TransactionsPage: React.FC = () => {
                                 <span className="material-symbols-outlined text-lg">download</span>
                                 Export CSV
                             </button>
-                            <button className="btn-liquid px-6 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex items-center gap-2 cursor-pointer">
+                            <button
+                                onClick={() => setShowModal(true)}
+                                className="btn-liquid px-6 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg flex items-center gap-2 cursor-pointer"
+                            >
                                 <span className="material-symbols-outlined text-lg">add</span>
-                                New Transfer
+                                Manual Entry
                             </button>
                         </div>
                     </header>
@@ -300,8 +393,170 @@ const TransactionsPage: React.FC = () => {
                     )}
                 </div>
             </main>
+
+            {/* Background decorations */}
             <div className="fixed top-1/4 -left-64 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] mix-blend-multiply filter pointer-events-none z-0"></div>
             <div className="fixed bottom-0 -right-64 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-[100px] mix-blend-multiply filter pointer-events-none z-0"></div>
+
+            {/* Manual Entry Modal */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-walnut/30 backdrop-blur-sm"
+                        onClick={() => !submitting && setShowModal(false)}
+                    ></div>
+
+                    {/* Modal */}
+                    <div className="relative glass-panel p-8 rounded-2xl shadow-xl border border-white/60 w-full max-w-md mx-4 animate-fade-in">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-walnut">Add Manual Entry</h2>
+                            <button
+                                onClick={() => !submitting && setShowModal(false)}
+                                className="p-2 rounded-lg hover:bg-white/40 transition-colors text-walnut/60 hover:text-walnut"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Error */}
+                        {submitError && (
+                            <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-200 text-red-600 text-sm">
+                                {submitError}
+                            </div>
+                        )}
+
+                        {/* Form */}
+                        <div className="flex flex-col gap-4">
+                            {/* Amount */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Amount (₹)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={form.amount}
+                                    onChange={(e) => handleFormChange('amount', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg input-glass text-walnut text-lg font-bold placeholder-walnut/30 focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            {/* Type */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Type</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleFormChange('type', 'DEBIT')}
+                                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${form.type === 'DEBIT'
+                                                ? 'bg-walnut text-white'
+                                                : 'bg-white/40 text-walnut hover:bg-white/60'
+                                            }`}
+                                    >
+                                        Expense (Debit)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleFormChange('type', 'CREDIT')}
+                                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${form.type === 'CREDIT'
+                                                ? 'bg-olive text-white'
+                                                : 'bg-white/40 text-walnut hover:bg-white/60'
+                                            }`}
+                                    >
+                                        Income (Credit)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Description</label>
+                                <input
+                                    type="text"
+                                    placeholder="Office supplies, Invoice payment, etc."
+                                    value={form.narration}
+                                    onChange={(e) => handleFormChange('narration', e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg input-glass text-walnut placeholder-walnut/40 text-sm font-medium focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Category</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Payroll, Utilities, Rent..."
+                                    value={form.category}
+                                    onChange={(e) => handleFormChange('category', e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg input-glass text-walnut placeholder-walnut/40 text-sm font-medium focus:ring-2 focus:ring-primary/20"
+                                />
+                                <p className="text-[10px] text-walnut/40 mt-1 ml-1">If unrecognized, will be saved as "Other"</p>
+                            </div>
+
+                            {/* Date */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Date</label>
+                                <input
+                                    type="date"
+                                    value={form.txn_date}
+                                    onChange={(e) => handleFormChange('txn_date', e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg input-glass text-walnut text-sm font-medium focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Mode */}
+                            <div>
+                                <label className="block text-xs font-bold text-walnut/60 uppercase tracking-wider mb-1.5">Mode</label>
+                                <select
+                                    value={form.mode}
+                                    onChange={(e) => handleFormChange('mode', e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-lg input-glass text-walnut text-sm font-medium focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none"
+                                >
+                                    <option value="Manual">Manual Entry</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="NEFT">NEFT</option>
+                                    <option value="IMPS">IMPS</option>
+                                    <option value="RTGS">RTGS</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => !submitting && setShowModal(false)}
+                                disabled={submitting}
+                                className="flex-1 py-2.5 rounded-lg glass-panel text-walnut font-semibold text-sm hover:bg-white/60 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={submitting}
+                                className="flex-1 py-2.5 rounded-lg btn-liquid text-white font-semibold text-sm shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {submitting ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Adding...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-lg">add</span>
+                                        Add Transaction
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
