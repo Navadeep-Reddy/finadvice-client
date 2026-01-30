@@ -37,12 +37,21 @@ interface MonthlyData {
     net: number;
 }
 
+interface Scheme {
+    id: string;
+    scheme_name: string;
+    category: 'food' | 'healthcare' | 'general';
+    description: string;
+    created_at: string;
+}
+
 const Dashboard = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [metricData, setMetricData] = useState<MetricData | null>(null);
     const [forecastData, setForecastData] = useState<ForecastData | null>(null);
     const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [schemes, setSchemes] = useState<Scheme[]>([]);
     const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
 
     // Current date/time
@@ -115,6 +124,22 @@ const Dashboard = () => {
                         .slice(-6); // Last 6 months
 
                     setMonthlyData(monthlyArray);
+                }
+
+                // Fetch schemes for Intelligence Feed (food category only)
+                const { data: schemesData, error: schemesError } = await supabase
+                    .from('schemes')
+                    .select('id, scheme_name, category, description, created_at')
+                    .eq('category', 'food')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                console.log('Schemes fetch result:', { schemesData, schemesError });
+
+                if (schemesError) {
+                    console.error('Schemes fetch error:', schemesError);
+                } else if (schemesData && schemesData.length > 0) {
+                    setSchemes(schemesData as Scheme[]);
                 }
             } catch (err) {
                 console.error('Dashboard fetch error:', err);
@@ -202,6 +227,20 @@ const Dashboard = () => {
         const [year, month] = monthKey.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1);
         return date.toLocaleDateString('en-IN', { month: 'short' });
+    };
+
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+        return `${Math.floor(diffDays / 365)}y ago`;
     };
 
     if (loading) {
@@ -451,33 +490,39 @@ const Dashboard = () => {
                             <button className="text-primary text-sm font-semibold hover:underline">View All</button>
                         </div>
                         <div className="flex flex-col gap-4 flex-1">
-                            <div className="glass-panel p-5 rounded-xl hover:-translate-y-1 hover:bg-white/60 transition-all duration-300 cursor-pointer relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-primary/30 group-hover:bg-primary transition-colors"></div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded border border-walnut/10 bg-white/30 text-[10px] font-bold uppercase tracking-wider text-walnut/60">Insight</span>
-                                    <span className="text-walnut/40 text-xs">Today</span>
+                            {schemes.length > 0 ? (
+                                schemes.map((scheme) => (
+                                    <div
+                                        key={scheme.id}
+                                        className="glass-panel p-5 rounded-xl hover:-translate-y-1 hover:bg-white/60 transition-all duration-300 cursor-pointer relative overflow-hidden group"
+                                    >
+                                        <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${scheme.category === 'food'
+                                            ? 'bg-orange-400/30 group-hover:bg-orange-400'
+                                            : scheme.category === 'healthcare'
+                                                ? 'bg-red-400/30 group-hover:bg-red-400'
+                                                : 'bg-primary/30 group-hover:bg-primary'
+                                            }`}></div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="px-2 py-0.5 rounded border border-walnut/10 bg-white/30 text-[10px] font-bold uppercase tracking-wider text-walnut/60">
+                                                {scheme.category}
+                                            </span>
+                                            <span className="text-walnut/40 text-xs">{formatRelativeTime(scheme.created_at)}</span>
+                                        </div>
+                                        <h3 className={`text-walnut font-bold text-base leading-snug mb-2 transition-colors ${scheme.category === 'food'
+                                            ? 'group-hover:text-orange-500'
+                                            : scheme.category === 'healthcare'
+                                                ? 'group-hover:text-red-500'
+                                                : 'group-hover:text-primary'
+                                            }`}>{scheme.scheme_name}</h3>
+                                        <p className="text-walnut/60 text-sm leading-relaxed line-clamp-2">{scheme.description}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="glass-panel p-5 rounded-xl text-center text-walnut/40">
+                                    <span className="material-symbols-outlined text-3xl mb-2 block">lightbulb</span>
+                                    <p className="text-sm">No schemes available</p>
                                 </div>
-                                <h3 className="text-walnut font-bold text-base leading-snug mb-2 group-hover:text-primary transition-colors">Cash Position Analysis</h3>
-                                <p className="text-walnut/60 text-sm leading-relaxed line-clamp-2">Your cash position is trending positively. Consider optimizing excess liquidity.</p>
-                            </div>
-                            <div className="glass-panel p-5 rounded-xl hover:-translate-y-1 hover:bg-white/60 transition-all duration-300 cursor-pointer relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-olive/30 group-hover:bg-olive transition-colors"></div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded border border-walnut/10 bg-white/30 text-[10px] font-bold uppercase tracking-wider text-walnut/60">Revenue</span>
-                                    <span className="text-walnut/40 text-xs">2d ago</span>
-                                </div>
-                                <h3 className="text-walnut font-bold text-base leading-snug mb-2 group-hover:text-olive transition-colors">Growth Trend Detected</h3>
-                                <p className="text-walnut/60 text-sm leading-relaxed line-clamp-2">Revenue growth of {revenueGrowth > 0 ? '+' : ''}{revenueGrowth.toFixed(1)}% observed. This outpaces industry average.</p>
-                            </div>
-                            <div className="glass-panel p-5 rounded-xl hover:-translate-y-1 hover:bg-white/60 transition-all duration-300 cursor-pointer relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-walnut/10 group-hover:bg-walnut/40 transition-colors"></div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded border border-walnut/10 bg-white/30 text-[10px] font-bold uppercase tracking-wider text-walnut/60">Planning</span>
-                                    <span className="text-walnut/40 text-xs">1w ago</span>
-                                </div>
-                                <h3 className="text-walnut font-bold text-base leading-snug mb-2">Budget Review Reminder</h3>
-                                <p className="text-walnut/60 text-sm leading-relaxed line-clamp-2">Schedule your quarterly budget review to align with cash flow projections.</p>
-                            </div>
+                            )}
                             <div className="mt-auto pt-4 flex justify-center">
                                 <span className="material-symbols-outlined text-walnut/20 animate-bounce">expand_more</span>
                             </div>
