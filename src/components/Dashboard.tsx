@@ -24,16 +24,16 @@ const Dashboard = () => {
                                 <p className="hidden lg:block text-walnut text-sm font-semibold">Dashboard</p>
                             </a>
                             <a className="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/40 transition-all" href="#">
-                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>payments</span>
-                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Cash Flow</p>
+                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>psychology</span>
+                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Decision Maker</p>
                             </a>
                             <a className="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/40 transition-all" href="#">
-                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>monitoring</span>
-                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Intelligence</p>
+                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>receipt_long</span>
+                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Transactions</p>
                             </a>
                             <a className="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/40 transition-all" href="#">
-                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>description</span>
-                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Reports</p>
+                                <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>credit_score</span>
+                                <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Credit Manager</p>
                             </a>
                         </div>
                     </div>
