@@ -12,12 +12,9 @@ const DecisionPage: React.FC = () => {
             <main className="flex-1 flex flex-col min-w-0 p-4 lg:p-6 lg:pl-0 gap-6 overflow-y-auto h-screen relative">
                 <header className="flex flex-col gap-1 px-2">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                            <span className="material-symbols-outlined text-primary text-xl block">colors_spark</span>
-                        </div>
                         <h1 className="text-walnut text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight">Financial Intelligence Assistant</h1>
                     </div>
-                    <p className="text-walnut/60 text-sm pl-[52px]">Ask complex questions about your liquidity, forecast models, or market impact.</p>
+                    <p className="text-walnut/60 text-sm">Ask complex questions about your liquidity, forecast models, or market impact.</p>
                 </header>
 
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-2">
