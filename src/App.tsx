@@ -5,6 +5,7 @@ import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import DecisionPage from './components/DecisionPage';
 import TransactionsPage from './components/TransactionsPage';
+import CreditAssessmentPage from './components/CreditAssessmentPage';
 import LoginPage from './components/LoginPage';
 
 
@@ -19,6 +20,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/decision" element={<DecisionPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/credit" element={<CreditAssessmentPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
