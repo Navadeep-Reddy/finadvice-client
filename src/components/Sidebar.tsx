@@ -1,9 +1,17 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
+    const { signOut } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSignOut = async () => {
+        await signOut();
+        navigate('/login');
+    };
 
     return (
         <aside className="sticky top-0 h-screen w-20 lg:w-64 shrink-0 p-4 lg:p-6 z-30">
@@ -48,6 +56,10 @@ const Sidebar: React.FC = () => {
                         <span className="material-symbols-outlined text-walnut/70 group-hover:text-walnut transition-colors" style={{ fontSize: '24px' }}>settings</span>
                         <p className="hidden lg:block text-walnut/70 group-hover:text-walnut text-sm font-medium">Settings</p>
                     </a>
+                    <button onClick={handleSignOut} className="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-red-500/10 transition-all w-full text-left">
+                        <span className="material-symbols-outlined text-walnut/70 group-hover:text-red-500 transition-colors" style={{ fontSize: '24px' }}>logout</span>
+                        <p className="hidden lg:block text-walnut/70 group-hover:text-red-500 text-sm font-medium">Sign Out</p>
+                    </button>
                 </div>
             </div>
         </aside>

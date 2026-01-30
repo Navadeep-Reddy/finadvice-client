@@ -1,13 +1,33 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const { signIn } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Login attempt:', { username, password });
-        // Add actual auth logic here or navigation
+        setLoading(true);
+        setError(null);
+
+        try {
+            const { error } = await signIn(username, password);
+            if (error) {
+                setError(error.message);
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            setError('An unexpected error occurred');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -59,9 +79,17 @@ const LoginPage = () => {
                             </div>
                         </div>
 
-                        <button className="btn-liquid w-full py-4 rounded-xl text-white font-bold tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all mt-4 flex items-center justify-center gap-2 group cursor-pointer">
-                            <span>Execute Login</span>
-                            <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            disabled={loading}
+                            className="btn-liquid w-full py-4 rounded-xl text-white font-bold tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all mt-4 flex items-center justify-center gap-2 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span>{loading ? 'Authenticating...' : 'Execute Login'}</span>
+                            {!loading && <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>}
                         </button>
                     </form>
 

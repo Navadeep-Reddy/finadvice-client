@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+import { useAuth } from '../context/AuthContext';
+
 const LandingPage: React.FC = () => {
+    const { session, signOut } = useAuth();
     return (
         <div className="bg-background-light text-walnut font-display selection:bg-olive selection:text-white overflow-x-hidden min-h-screen">
             <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
@@ -17,7 +20,13 @@ const LandingPage: React.FC = () => {
                         <a className="hover:text-primary transition-colors" href="#">Company</a>
                     </div>
                     <div className="flex items-center gap-4">
-                        <a className="text-walnut text-sm font-semibold hover:text-primary transition-colors" href="#">Login</a>
+                        {session ? (
+                            <button onClick={() => signOut()} className="text-walnut text-sm font-semibold hover:text-primary transition-colors cursor-pointer">
+                                Sign Out
+                            </button>
+                        ) : (
+                            <Link to="/login" className="text-walnut text-sm font-semibold hover:text-primary transition-colors">Login</Link>
+                        )}
                         <button className="btn-liquid px-5 py-2 rounded-lg text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer">
                             Request Access
                         </button>
