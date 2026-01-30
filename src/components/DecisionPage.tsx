@@ -12,7 +12,7 @@ const DecisionPage: React.FC = () => {
             <main className="flex-1 flex flex-col min-w-0 p-4 lg:p-6 lg:pl-0 gap-6 overflow-y-auto h-screen relative">
                 <header className="flex flex-col gap-1 px-2">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-walnut text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight">Financial Intelligence Assistant</h1>
+                        <h1 className="text-walnut text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight">FinAdvice Assistant</h1>
                     </div>
                     <p className="text-walnut/60 text-sm">Ask complex questions about your liquidity, forecast models, or market impact.</p>
                 </header>
@@ -69,7 +69,7 @@ const DecisionPage: React.FC = () => {
                                     <span className="text-[10px] text-walnut/40">Just now</span>
                                 </div>
                                 <div className="glass-panel-clear p-5 rounded-2xl rounded-tl-none text-walnut leading-relaxed shadow-sm">
-                                    <p>Good morning. I am your Financial Intelligence Assistant. I can help you with complex questions about your liquidity, forecast models, or market impact. How can I help you today?</p>
+                                    <p>Good morning. I am your FinAdvice Assistant. I can help you with complex questions about your liquidity, forecast models, or market impact. How can I help you today?</p>
                                 </div>
                             </div>
                         </div>

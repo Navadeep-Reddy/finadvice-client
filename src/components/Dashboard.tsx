@@ -15,7 +15,7 @@ const Dashboard = () => {
                 {/* Header */}
                 <header className="flex flex-wrap justify-between items-end gap-6 px-2">
                     <div className="flex flex-col gap-2">
-                        <p className="text-walnut text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight">Welcome back, Acme Corp</p>
+                        <p className="text-walnut text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight">Welcome back</p>
                         <div className="flex items-center gap-2 text-walnut/60">
                             <span className="material-symbols-outlined text-sm">schedule</span>
                             <p className="text-sm font-medium tracking-wide uppercase">October 24, 2023 • 09:41 AM</p>

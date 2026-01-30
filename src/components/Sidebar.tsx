@@ -16,11 +16,15 @@ const Sidebar: React.FC = () => {
                             style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuACeFXceYBH1HA3ImrvnuaiYkNIZrHe3gVUGTF4QTDxOPXaFdj4MBGLp_ctdX1gftpiCZvYaShh50IJtFw22XPgR1biAXnTUb5xwcw73XABMk30YfncspnqdSSKjtThiiTM07rb_JjlFRJWJQZXjL0TYCIduXkQxk2ncnVPF-WXwToNwTVIQKsiBNNk-jpiQ27Q9fymxLItDbYmncR36dHyWgCZM2VCIGXPXgZlm4YFvH6hJMgEwn-Avwmq5pIMsXIT5LLLKGyu9q8")' }}
                         />
                         <div className="hidden lg:flex flex-col">
-                            <h1 className="text-walnut text-base font-bold leading-tight tracking-tight">Acme Inst.</h1>
-                            <p className="text-walnut/60 text-xs font-medium uppercase tracking-wider">Enterprise</p>
+                            <h1 className="text-walnut text-base font-bold leading-tight tracking-tight">FinAdvice</h1>
+                            <p className="text-walnut/60 text-xs font-medium uppercase tracking-wider">SME Edition</p>
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 w-full mt-6">
+                        <Link to="/" className={`group flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${location.pathname === '/' ? 'bg-white/60 shadow-sm border border-white/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5' : 'hover:bg-white/40'}`}>
+                            <span className={`material-symbols-outlined transition-colors ${location.pathname === '/' ? 'text-primary' : 'text-walnut/70 group-hover:text-walnut'}`} style={{ fontSize: '24px' }}>home</span>
+                            <p className={`hidden lg:block text-sm font-medium ${location.pathname === '/' ? 'text-walnut font-semibold' : 'text-walnut/70 group-hover:text-walnut'}`}>Home</p>
+                        </Link>
                         <Link to="/dashboard" className={`group flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${location.pathname === '/dashboard' ? 'bg-white/60 shadow-sm border border-white/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5' : 'hover:bg-white/40'}`}>
                             <span className={`material-symbols-outlined transition-colors ${location.pathname === '/dashboard' ? 'text-primary' : 'text-walnut/70 group-hover:text-walnut'}`} style={{ fontSize: '24px' }}>grid_view</span>
                             <p className={`hidden lg:block text-sm font-medium ${location.pathname === '/dashboard' ? 'text-walnut font-semibold' : 'text-walnut/70 group-hover:text-walnut'}`}>Dashboard</p>
