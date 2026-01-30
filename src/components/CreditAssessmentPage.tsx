@@ -101,7 +101,6 @@ const CreditAssessmentPage: React.FC = () => {
     const currentBalance = metricData?.financial_health?.total_balance_raw ?? 0;
     const monthlyRevenue = metricData?.monthly_averages?.revenue_raw ?? 0;
     const monthlyExpenses = metricData?.monthly_averages?.gross_expenses_raw ?? 0;
-    const netBurnRaw = metricData?.monthly_averages?.net_burn_raw ?? 0; // Negative if profitable
     const monthlyProfit = monthlyRevenue - monthlyExpenses;
     const isProfitable = monthlyProfit >= 0;
     const confidenceRaw = forecastData?.confidence_raw ?? 0.6; // Default 60%

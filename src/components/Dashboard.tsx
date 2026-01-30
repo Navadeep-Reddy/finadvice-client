@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Sidebar from './Sidebar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
