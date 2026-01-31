@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import Sidebar from './Sidebar';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -243,6 +244,92 @@ const Dashboard = () => {
         return `${Math.floor(diffDays / 365)}y ago`;
     };
 
+    const handleExport = async () => {
+        if (!user) return;
+
+        try {
+            // 1. Fetch all data
+            const [
+                { data: transactions },
+                { data: accounts },
+                { data: recurring },
+                { data: metrics }
+            ] = await Promise.all([
+                supabase.from('transactions').select('*').eq('user_id', user.id).order('txn_date', { ascending: false }),
+                supabase.from('accounts').select('*').eq('user_id', user.id),
+                supabase.from('recurring_transactions').select('*').eq('user_id', user.id),
+                supabase.from('cached_metrics').select('metric_data, calculated_at').eq('user_id', user.id).single()
+            ]);
+
+            // 2. Prepare Worksheets
+            const wb = XLSX.utils.book_new();
+
+            // Transactions Sheet
+            if (transactions?.length) {
+                const txnWs = XLSX.utils.json_to_sheet(transactions.map(t => ({
+                    Date: t.txn_date ? new Date(t.txn_date).toLocaleDateString() : '',
+                    Description: t.narration,
+                    Amount: t.amount,
+                    Type: t.type,
+                    Category: t.category || 'Uncategorized',
+                    Mode: t.mode || '-',
+                    ID: t.txn_id || t.id
+                })));
+                XLSX.utils.book_append_sheet(wb, txnWs, "Transactions");
+            }
+
+            // Accounts Sheet
+            if (accounts?.length) {
+                const accWs = XLSX.utils.json_to_sheet(accounts.map(a => ({
+                    Bank: a.fip_name,
+                    Type: a.account_type,
+                    Account: a.masked_account_number,
+                    Balance: a.balance,
+                    Last_Synced: a.last_synced_at ? new Date(a.last_synced_at).toLocaleString() : ''
+                })));
+                XLSX.utils.book_append_sheet(wb, accWs, "Accounts");
+            }
+
+            // Recurring Sheet
+            if (recurring?.length) {
+                const recWs = XLSX.utils.json_to_sheet(recurring.map(r => ({
+                    Pattern: r.narration_pattern,
+                    Avg_Amount: r.avg_amount,
+                    Frequency_Days: r.frequency_days,
+                    Next_Due: r.next_expected ? new Date(r.next_expected).toLocaleDateString() : '',
+                    Category: r.category
+                })));
+                XLSX.utils.book_append_sheet(wb, recWs, "Recurring");
+            }
+
+            // Metrics Sheet
+            if (metrics) {
+                const mData = metrics.metric_data as MetricData;
+                const metricsList = [
+                    { Metric: 'Total Balance', Value: mData.financial_health.total_balance_raw },
+                    { Metric: 'Monthly Revenue', Value: mData.monthly_averages.revenue_raw },
+                    { Metric: 'Monthly Expenses', Value: mData.monthly_averages.gross_expenses_raw },
+                    { Metric: 'Net Burn', Value: mData.monthly_averages.net_burn_raw },
+                    { Metric: 'Runway Months', Value: mData.financial_health.runway_months },
+                    { Metric: 'Revenue Growth %', Value: mData.growth.revenue_growth_raw },
+                    { Metric: 'Growth Trend', Value: mData.growth.trend },
+                    { Metric: 'Stability', Value: mData.volatility.stability },
+                    { Metric: 'Calculated At', Value: metrics.calculated_at ? new Date(metrics.calculated_at).toLocaleString() : '' }
+                ];
+                const metricWs = XLSX.utils.json_to_sheet(metricsList);
+                XLSX.utils.book_append_sheet(wb, metricWs, "Financial Health");
+            }
+
+            // 3. Save File
+            const dateStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `financial_export_${dateStr}.xlsx`);
+
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Failed to export data. Please try again.');
+        }
+    };
+
     if (loading) {
         return (
             <div className="relative flex min-h-screen w-full flex-row overflow-hidden bg-background-light text-walnut font-display">
@@ -268,13 +355,12 @@ const Dashboard = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button className="glass-panel px-4 py-2.5 rounded-lg text-sm font-semibold text-walnut hover:bg-white/60 transition-all flex items-center gap-2">
+                        <button
+                            onClick={handleExport}
+                            className="glass-panel px-4 py-2.5 rounded-lg text-sm font-semibold text-walnut hover:bg-white/60 transition-all flex items-center gap-2 cursor-pointer"
+                        >
                             <span className="material-symbols-outlined text-lg">download</span>
                             Export Data
-                        </button>
-                        <button className="btn-liquid px-6 py-2.5 rounded-lg text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">bolt</span>
-                            Quick Actions
                         </button>
                     </div>
                 </header>
