@@ -1,73 +1,105 @@
-# React + TypeScript + Vite
+## Project Description
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Design and build a scalable, secure, and intelligent FinTech platform that enables real-time **financial decision-making** for small businesses by ingesting heterogeneous data sources (transactions, user behavior, external signals), handling uncertainty and incomplete information, ensuring privacy and regulatory compliance, and delivering explainable, actionable outcomes. The system demonstrates strong system architecture, data handling, security, and performance, while incorporating AI for prediction, optimization, and reasoning, without relying solely on AI as the core solution.
 
-Currently, two official plugins are available:
+<div align="center">
+  <img src="https://github.com/Navadeep-Reddy/ProjectScreenshots/blob/main/FinadviceClient/landing_page.png?raw=true" alt="Landing Page" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;"/>
+  <p><b>landing_page.png</b></p>
+</div>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+<div align="center">
+  <img src="https://github.com/Navadeep-Reddy/ProjectScreenshots/blob/main/FinadviceClient/credit-assesment.png?raw=true" alt="Credit Assessment" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;"/>
+  <p><b>credit-assesment.png</b></p>
+</div>
 
-## React Compiler
+<div align="center">
+  <img src="https://github.com/Navadeep-Reddy/ProjectScreenshots/blob/main/FinadviceClient/dashboard.png?raw=true" alt="Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;"/>
+  <p><b>dashboard.png</b></p>
+</div>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+<div align="center">
+  <img src="https://github.com/Navadeep-Reddy/ProjectScreenshots/blob/main/FinadviceClient/decisionmaker.png?raw=true" alt="Decision Maker" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;"/>
+  <p><b>decisionmaker.png</b></p>
+</div>
 
-## Expanding the ESLint configuration
+<div align="center">
+  <img src="https://github.com/Navadeep-Reddy/ProjectScreenshots/blob/main/FinadviceClient/transactions.png?raw=true" alt="Transactions" width="800" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;"/>
+  <p><b>transactions.png</b></p>
+</div>
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+*   **Unified Transaction Processing**: Seamlessly ingests data from Account Aggregators (Setu) and manual inputs so you have a single source of truth.
+*   **Proactive Regulation Alerts**: Automatically monitors and interprets new financial regulations and government schemes relevant to your business.
+*   **AI-Driven Forecasting**: Leverages Prophet ML models to predict cash flow trends and determine credit capacity on a weekly basis.
+*   **Smart Decision Support**: Includes an LLM-powered assistant to help validate business expenses against your actual financial metrics.
+*   **Comprehensive Dashboard**: Visualizes real-time financial health, transaction history, and credit potential.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Architecture
+
+### Transaction Flow
+```mermaid
+graph LR
+    subgraph Sources
+        Setu[Setu Account Aggregator]
+        Manual[Manual Entry]
+    end
+    
+    subgraph Messaging
+        RMQ(RabbitMQ)
+    end
+    
+    subgraph Processing
+        Express[Express Service]
+    end
+    
+    subgraph Storage
+        DB[(PostgreSQL)]
+    end
+
+    Setu -->|Transaction Event| RMQ
+    Manual -->|Transaction Entry| RMQ
+    RMQ -->|Consume| Express
+    Express -->|Standardize & Remove Uncertainty| DB
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Regulation Intelligence Flow
+```mermaid
+graph TD
+    BrowseAI[Browse AI] -->|Regulations & Scheme Changes| RMQ(RabbitMQ)
+    RMQ -->|Consume| FastAPI[FastAPI Backend]
+    
+    subgraph "Vector Search & Reasoning"
+        FastAPI -->|Chunk Data| VectorDB[(pgVector)]
+        VectorDB -->|Similarity Search| LLM[LLM Engine]
+        LLM -->|Generate Actionable Outcomes| DB[(PostgreSQL)]
+    end
+```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Forecasting Flow
+```mermaid
+graph TD
+    Cron[Weekly Cronjob] -->|Trigger| Prophet[FastAPI + Prophet Model]
+    DB[(PostgreSQL)] -->|Fetch Transactions| Prophet
+    Prophet -->|Generate| CashForecast[Cash Forecast]
+    CashForecast -->|Derive| CreditModel[Credit Capacity Model]
+    CashForecast -->|Store| DB
+    CreditModel -->|Store| DB
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Client Application Flow
+```mermaid
+graph TD
+    User((User)) --> Client[Client App]
+    
+    subgraph "Data Access"
+        Client -->|Fetch Insights & Credit Model| DB[(PostgreSQL)]
+        Client -->|Fetch Transactions & Graphs| Supabase[(Supabase)]
+    end
+    
+    subgraph "Decision Support"
+        Client -->|Verify Spending| Assistant[LLM Assistant]
+        Assistant -->|Tool Calls| Metrics[Financial Metrics]
+    end
 ```
